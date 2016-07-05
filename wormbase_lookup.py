@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 from intermine.webservice import Service
@@ -6,31 +6,32 @@ import pandas as pd
 import argparse
 import sys
 
-service = Service("http://im-dev.wormbase.org/tools/wormmine/service")
+service = Service("http://intermine.wormbase.org/tools/wormmine/service")
 
 ###############################################################################
-# Python script for getting gene descriptions from Wormbase for a list of genes
-# obtained from mmp pipeline
+# Python script for getting gene descriptions/IDs from Wormbase for a list of genes
 ###############################################################################
 
 # User varibles:
 
 ###############################################################################
 
-parser = argparse.ArgumentParser(description='Convert between different nomenclature systems')
+parser = argparse.ArgumentParser(description='Look up useful fetures for a gene list in wormbase and add these as a new column')
 
 parser.add_argument('file', help='file contaning gene list or table')
-parser.add_argument('-i', help='current format of gene list (wormbase, gene, transcript', required=True)
-parser.add_argument('-o', help='format to convert to (wormbase, gene, transcript, description', required=True)
-parser.add_argument('-c', type=int, default=0, help='index of column containing gene list (default: 0)')
+parser.add_argument('-q', help='query: current format of gene list (wormbase_id, gene, transcript). Default: transcript', default='transcript')
+parser.add_argument('-r', help='result: feature to look up (wormbase_id, gene, transcript, description). Default: description', default='description')
+parser.add_argument('-c', type=int, default=0, help='index of column containing gene list. Default: 0')
+parser.add_argument('--header', help='input file contains a header', action='store_true')
+parser.add_argument('-o', help='output file name Default: wormbase_results.txt', default='wormbase_results.txt')
 
 args = parser.parse_args()
 
 filename = args.file
 gene_index = args.c
 
-in_cmd = args.i
-if in_cmd == 'wormbase':
+in_cmd = args.q
+if in_cmd == 'wormbase_id':
 	in_format = 'primaryIdentifier'
 elif in_cmd == 'gene':
 	in_format = 'symbol'
@@ -39,8 +40,8 @@ elif in_cmd == 'transcript':
 else:
 	sys.exit('error: invalid input format')
 
-out_cmd = args.o
-if out_cmd == 'wormbase':
+out_cmd = args.r
+if out_cmd == 'wormbase_id':
 	out_format = 'primaryIdentifier'
 elif out_cmd == 'gene':
 	out_format = 'symbol'
@@ -53,15 +54,27 @@ elif out_cmd == 'length':
 else:
 	sys.exit('error: invalid output format')
 
-data = pd.read_csv(filename, sep='\t')
+if args.header:
+	head = 0
+else:
+	head = None
 
-data[out_cmd+'_lookup'] = pd.Series(index=range(0, len(data)-1), dtype='str')
+outfile = args.o
+
+data = pd.read_csv(filename, sep='\t', header=head)
+
+data[out_cmd] = pd.Series(index=range(0, len(data)-1), dtype='str')
+
+# Rename query column to 'query_in'
+new_cols = data.columns.values
+new_cols[0] = 'query_in'
+data.columns = new_cols
 
 # Iterate through gene list and get brief description for each gene
 for i in range(len(data)):
 	gene = data.iloc[i, gene_index]
+	gene = gene.strip()
 	query = service.new_query("Gene")
-
 	# The view specifies the output columns
 	query.add_view(out_format)
 
@@ -80,7 +93,9 @@ for i in range(len(data)):
 	if query_success:	
 		for row in query.rows():
 			query_out = (row[out_format])
-			data.ix[i, out_cmd+'_lookup'] = query_out
-			print(query_out)    
+			data.ix[i, out_cmd] = query_out
+			print(gene, " ", query_out)
 
-data.to_csv(filename, sep='\t', index=False)
+data = data[['query_in', out_cmd]]
+
+data.to_csv(outfile, sep='\t', index=False)
