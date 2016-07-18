@@ -37,14 +37,14 @@ opts <- arguments$options
 in_term <- ifelse(
             opts$query == "gene", "gene_name", ifelse(
             opts$query == "wormbase_id", "ensembl_gene_id", ifelse(
-            opts$query == "transcript", "wormbase_gseq", print("ERROR: invalid query value")
+            opts$query == "transcript", "ensembl_transcript_id", print("ERROR: invalid query value")
             )))
 
 if (opts$result == "coords"){
     out_term <- c("chromosome_name", "start_position", "end_position", "strand")
 } else {
     out_term <- ifelse(
-                opts$result == "gene", "gene_name", ifelse(
+                opts$result == "gene", "ensembl_gene_id", ifelse(
                 opts$result == "wormbase_id", "ensembl_gene_id", ifelse(
                 opts$result == "transcript", "wormbase_gseq", ifelse(
                 opts$result == "type", "gene_biotype", ifelse(
@@ -57,7 +57,7 @@ input_data <- read.table(arguments$args, sep = "\t", header = ifelse(opts$header
 
 mart <- useMart("parasite_mart", dataset = "wbps_eg_gene", host = "parasite.wormbase.org")
 
-results <- getBM(attributes = out_term, 
+results <- getBM(attributes = c("ensembl_gene_id", out_term), 
                                filters = c("species_id_1010", in_term), 
                                values = c("celegans", input_data[opts$c]),
                                mart = mart)
