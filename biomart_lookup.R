@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+# version 2.1
 
 library(biomaRt)
 library(optparse)
@@ -37,19 +38,26 @@ opts <- arguments$options
 in_term <- ifelse(
             opts$query == "gene", "gene_name", ifelse(
             opts$query == "wormbase_id", "ensembl_gene_id", ifelse(
-            opts$query == "transcript", "ensembl_transcript_id", print("ERROR: invalid query value")
+            opts$query == "transcript", "wormbase_gseqname", print("ERROR: invalid query value")
             )))
 
 # The structure below allows for multple "return" results
-out_term <- "ensembl_gene_id"
+# Having the query filter in the first column of the results table allows for merging of dataframes later on
+
+out_term <- ifelse(
+    opts$query == "gene", "gene_name", ifelse(
+    opts$query == "transcript", "ensembl_transcript_id", in_term))
 
 opts$result <- unlist(strsplit(opts$result, ","))
 
 if ("gene" %in% opts$result){
     out_term <- c(out_term, "external_gene_id")
 }
+if ("wormbase_id" %in% opts$results){
+    out_term <- c(out_term, "ensembl_gene_id") 
+}
 if ("transcript" %in% opts$result){
-    out_term <- c(out_term, "wormbase_gseq")
+    out_term <- c(out_term, "ensembl_transcript_id")
 }
 if ("type" %in% opts$result){
     out_term <- c(out_term, "gene_biotype")
@@ -75,6 +83,9 @@ results <- getBM(attributes = c(out_term),
                                values = c("celegans", input_data[opts$c]),
                                mart = mart)
 
-#input_data <- cbind(input_data, results)
+# Merge filter and attributes. This ensures that the results remain in the same order as the query
+input_genes <- data.frame(input_data[opts$c])
+colnames(input_genes) <- as.character(out_term[1])
+results_table <- merge(input_genes, results, by=out_term[1], sort = FALSE, all.x = TRUE)
 
-write.table(results, file = opts$output, sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(results_table, file = opts$output, sep = "\t", quote = FALSE, row.names = FALSE)
