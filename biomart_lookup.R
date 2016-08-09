@@ -18,9 +18,8 @@ option_list <- list(
                 type = "integer",
                 default = 1),
     make_option(c("-o", "--output"),
-                help = "output file name (default = 'biomart_results.txt'",
-                type = "character",
-                default = "biomart_results.txt"),
+                help = "output results to specified file name (by default, results are printed to terminal)",
+                type = "character"),
     make_option(c("-e", "--header"),
                 help = "use this flag if input file contains a header",
                 type = "logical",
@@ -38,14 +37,14 @@ opts <- arguments$options
 in_term <- ifelse(
             opts$query == "gene", "gene_name", ifelse(
             opts$query == "wormbase_id", "ensembl_gene_id", ifelse(
-            opts$query == "transcript", "wormbase_gseqname", print("ERROR: invalid query value")
+            opts$query == "transcript", "ensembl_transcript_id", print("ERROR: invalid query value")
             )))
 
 # The structure below allows for multple "return" results
 # Having the query filter in the first column of the results table allows for merging of dataframes later on
 
 out_term <- ifelse(
-    opts$query == "gene", "gene_name", ifelse(
+    opts$query == "gene", "external_gene_id", ifelse(
     opts$query == "transcript", "ensembl_transcript_id", in_term))
 
 opts$result <- unlist(strsplit(opts$result, ","))
@@ -74,18 +73,35 @@ print(out_term)
 print("FROM:")
 print(in_term)
 
-input_data <- read.table(arguments$args, sep = "\t", header = ifelse(opts$header, TRUE, FALSE))
+if (arguments$args == "-") {
+    input_data <- character(length = 0)
+    f <- file("stdin")
+    open(f)
+    while(length(line <- readLines(f, n = 1)) > 0) {
+        input_data <- c(input_data, line)
+    }
+    input_data <- data.frame("V1" = input_data)
 
-mart <- useMart("parasite_mart", dataset = "wbps_eg_gene", host = "parasite.wormbase.org")
+} else {
+    input_data <- read.table(arguments$args, sep = "\t", header = ifelse(opts$header, TRUE, FALSE))
+}
+
+mart <- useMart("parasite_mart", dataset = "wbps_gene", host = "parasite.wormbase.org")
 
 results <- getBM(attributes = c(out_term), 
-                               filters = c("species_id_1010", in_term), 
-                               values = c("celegans", input_data[opts$c]),
+                               filters = c(in_term), 
+                               values = c(input_data[opts$c]),
                                mart = mart)
 
 # Merge filter and attributes. This ensures that the results remain in the same order as the query
 input_genes <- data.frame(input_data[opts$c])
 colnames(input_genes) <- as.character(out_term[1])
-results_table <- merge(input_genes, results, by=out_term[1], sort = FALSE, all.x = TRUE)
 
-write.table(results_table, file = opts$output, sep = "\t", quote = FALSE, row.names = FALSE)
+results_table <- merge(input_genes, results, by = out_term[1], sort = FALSE, all.x = TRUE)
+
+if (length(opts$output) > 0){
+
+    write.table(results_table, file = opts$output, sep = "\t", quote = FALSE, row.names = FALSE)
+} else {
+    print(results_table)
+}
