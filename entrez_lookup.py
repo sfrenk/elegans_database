@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+###############################################################################
+# Get sequences for regions in a bed file
+###############################################################################
+
 import argparse
 from Bio import Entrez, SeqIO
 import os
