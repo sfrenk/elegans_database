@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 # version 2.1
 
-library(biomaRt)
-library(optparse)
+suppressPackageStartupMessages(library(biomaRt))
+suppressPackageStartupMessages(library(optparse))
 
 option_list <- list(
     make_option(c("-q", "--query"),
@@ -19,7 +19,8 @@ option_list <- list(
                 default = 1),
     make_option(c("-o", "--output"),
                 help = "output results to specified file name (by default, results are printed to terminal)",
-                type = "character"),
+                type = "character",
+                default = "STDOUT"),
     make_option(c("-e", "--header"),
                 help = "use this flag if input file contains a header",
                 type = "logical",
@@ -37,12 +38,12 @@ opts <- arguments$options
 in_term <- ifelse(
             opts$query == "gene", "gene_name", ifelse(
             opts$query == "wormbase_id", "ensembl_gene_id", ifelse(
+            opts$query == "seq_id", "wormbase_gseqname", ifelse(
             opts$query == "transcript", "ensembl_transcript_id", print("ERROR: invalid query value")
-            )))
+            ))))
 
 # The structure below allows for multple "return" results
 # Having the query filter in the first column of the results table allows for merging of dataframes later on
-
 out_term <- ifelse(
     opts$query == "gene", "external_gene_id", ifelse(
     opts$query == "transcript", "ensembl_transcript_id", in_term))
@@ -96,11 +97,21 @@ results <- getBM(attributes = c(out_term),
 # Merge filter and attributes. This ensures that the results remain in the same order as the query
 input_genes <- data.frame(input_data[opts$c])
 colnames(input_genes) <- as.character(out_term[1])
+input_genes$index_col <- 1:nrow(input_genes)
 
-results_table <- merge(input_genes, results, by = out_term[1], sort = FALSE, all.x = TRUE)
+results_table <- merge(input_genes, results, by = out_term[1], all.x = TRUE)
+results_table <- results_table[order(results_table$index_col, decreasing = FALSE),]
+results_table$index_col <- NULL
+results_table <- results_table[!(duplicated(results_table[out_term[1]])),]
 
-if (length(opts$output) > 0){
+# The "description" attribute comes with source info, which isn't very useful.
+if ("description" %in% colnames(results_table)){
+    suppressPackageStartupMessages(library(stringr))
+    results_table$description <- sapply(results_table$description, function(x) str_replace(x, '[ ]*\\[Source:.*', ""))
+}
 
+# Output data
+if (opts$output != "STDOUT"){
     write.table(results_table, file = opts$output, sep = "\t", quote = FALSE, row.names = FALSE)
 } else {
     print(results_table)

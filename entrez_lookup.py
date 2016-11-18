@@ -12,10 +12,11 @@ import os
 # ARGUMENTS
 ###############################################################################
 
-parser = argparse.ArgumentParser(description = 'Get sequences for regions in a bed file')
+parser = argparse.ArgumentParser(description = 'Get sequences for list of regions in a bed file')
 
-parser.add_argument('file', help = 'bed file containing regions of interest')
-parser.add_argument('-o', "--output", help='output file name Default: entrez_results.txt', default='entrez_results.txt')
+parser.add_argument('file', help = 'file containing regions of interest')
+parser.add_argument('-o', '--output', help = 'output file name Default: entrez_results.txt', default = 'entrez_results.txt')
+#parser.add_argument('-c', '--coords', help = 'query database with chromosomal coordinates. Coordinates should be in bed format (tab separated list of chromosome, start and end for each line)', action = 'store_true', default = False)
 
 args = parser.parse_args()
 
