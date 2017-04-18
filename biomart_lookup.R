@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# version 2.1
+# version 3.1
 
 suppressPackageStartupMessages(library(biomaRt))
 suppressPackageStartupMessages(library(optparse))
@@ -36,25 +36,28 @@ arguments <- parse_args(parser, positional_arguments = 1)
 opts <- arguments$options
 
 in_term <- ifelse(
-            opts$query == "gene", "gene_name", ifelse(
-            opts$query == "wormbase_id", "ensembl_gene_id", ifelse(
-            opts$query == "seq_id", "wormbase_gseqname", ifelse(
+            opts$query == "gene", "external_gene_name", ifelse(
+            opts$query == "wormbase_id", "wormbase_gene", ifelse(
+            opts$query == "seq_id", "wormbase_gene_seq_name", ifelse(
             opts$query == "transcript", "ensembl_transcript_id", print("ERROR: invalid query value")
             ))))
 
 # The structure below allows for multple "return" results
 # Having the query filter in the first column of the results table allows for merging of dataframes later on
 out_term <- ifelse(
-    opts$query == "gene", "external_gene_id", ifelse(
+    opts$query == "gene", "external_gene_name", ifelse(
     opts$query == "transcript", "ensembl_transcript_id", in_term))
 
 opts$result <- unlist(strsplit(opts$result, ","))
 
 if ("gene" %in% opts$result){
-    out_term <- c(out_term, "external_gene_id")
+    out_term <- c(out_term, "external_gene_name")
 }
 if ("wormbase_id" %in% opts$results){
-    out_term <- c(out_term, "ensembl_gene_id") 
+    out_term <- c(out_term, "wormbase_gene") 
+}
+if ("seq_id" %in% opts$results){
+    out_term <- c(out_term, "wormbase_gene_seq_name") 
 }
 if ("transcript" %in% opts$result){
     out_term <- c(out_term, "ensembl_transcript_id")
@@ -87,7 +90,9 @@ if (arguments$args == "-") {
     input_data <- read.table(arguments$args, sep = "\t", header = ifelse(opts$header, TRUE, FALSE))
 }
 
-mart <- useMart("parasite_mart", dataset = "wbps_gene", host = "parasite.wormbase.org")
+# Paraiste isn't working for me, using Esembl instead
+#mart <- useMart("parasite_mart", dataset = "wbps_gene", host = "parasite.wormbase.org")
+mart <- useMart(biomart="ensembl", dataset="celegans_gene_ensembl")
 
 results <- getBM(attributes = c(out_term), 
                                filters = c(in_term), 
@@ -104,7 +109,7 @@ results_table <- results_table[order(results_table$index_col, decreasing = FALSE
 results_table$index_col <- NULL
 results_table <- results_table[!(duplicated(results_table[out_term[1]])),]
 
-# The "description" attribute comes with source info, which isn't very useful.
+# The "description" attribute comes with source info, which isn't very useful, so we can get rid of this.
 if ("description" %in% colnames(results_table)){
     suppressPackageStartupMessages(library(stringr))
     results_table$description <- sapply(results_table$description, function(x) str_replace(x, '[ ]*\\[Source:.*', ""))
