@@ -71,6 +71,10 @@ if ("description" %in% opts$result){
 if ("coords" %in% opts$result){
     out_term <- c(out_term, "chromosome_name", "start_position", "end_position", "strand")
 }
+if ("go" %in% opts$results){
+    out_term <- c(out_term, "GO term name")
+}
+
 
 print("LOOKING UP:")
 print(out_term)

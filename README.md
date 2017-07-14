@@ -3,5 +3,8 @@
 ## biomart_lookup.R
 R script to find features such as alternative IDs or Sequences for a list of genes. This script uses the Parasite (Wormbase) Biomart.
 
+## samtools_lookup.py
+Get sequence for regions in a bed file. Can also be loaded as a module to retrieve sequence of given coordinates. Requires local genome fasta file.
+
 ## entrez_lookup.py
-Gets sequences for regions in a bed file and saves them as a multifasta file.
+Similar to samtools_lookup, but uses the entrez database instead of samtools.
