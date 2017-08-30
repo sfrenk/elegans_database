@@ -76,10 +76,10 @@ if ("go" %in% opts$results){
 }
 
 
-print("LOOKING UP:")
-print(out_term)
-print("FROM:")
-print(in_term)
+write("LOOKING UP:", stderr())
+write(out_term, stderr())
+write("FROM:", stderr())
+write(in_term, stderr())
 
 if (arguments$args == "-") {
     input_data <- character(length = 0)
@@ -123,5 +123,5 @@ if ("description" %in% colnames(results_table)){
 if (opts$output != "STDOUT"){
     write.table(results_table, file = opts$output, sep = "\t", quote = FALSE, row.names = FALSE)
 } else {
-    print(results_table)
+    print(results_table, right = FALSE, row.names = FALSE)
 }
