@@ -25,7 +25,7 @@ def get_seq(chrom, start, end, name = None, zero = False):
 	
 	if zero:
 		# If entry is zero indexed (eg bed file), add 1 to the start coordinate
-		start += 1
+		start = int(start) + 1
 
 	coords = str(chrom) + ":" + str(start) + "-" + str(end)
 	seq = subprocess.check_output(["samtools", "faidx", genome_fasta, coords]).decode("utf-8") 

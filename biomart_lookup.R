@@ -96,7 +96,17 @@ if (arguments$args == "-") {
 
 # Paraiste isn't working for me, using Esembl instead
 #mart <- useMart("parasite_mart", dataset = "wbps_gene", host = "parasite.wormbase.org")
-mart <- useMart(biomart="ensembl", dataset="celegans_gene_ensembl")
+# There's sometimes a problem with connecting to biomart, so need to keep trying if there is an error
+try_counter <- 0
+while(!exists("mart") & try_counter < 10){
+    tryCatch(mart <- useMart(biomart="ensembl", dataset="celegans_gene_ensembl"), error = function(x) {Sys.sleep(10)})
+    try_counter <- try_counter + 1
+}
+
+if (!exists("mart")){
+    print("ERROR: Could not connect to Biomart")
+    quit(save = "no", status = 1, runLast = FALSE)
+}
 
 results <- getBM(attributes = c(out_term), 
                                filters = c(in_term), 
