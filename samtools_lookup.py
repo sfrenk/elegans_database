@@ -19,13 +19,25 @@ import re
 # Fasta files for query genomes
 
 # LOCAL
-genome_fasta_files = {"elegans" : "/home/sfrenk/Documents/Resources/Seq/WS251/genome/genome.fa", "briggsae" : "/home/sfrenk/Documents/Resources/Seq/briggsae/wormbase/WS263/genome.fa", "remani" : "/home/sfrenk/Documents/Resources/Seq/remani/genome.fa"}
+genome_fasta_files = {"elegans" : "/home/sfrenk/Documents/Resources/Seq/WS251/genome/genome.fa", "briggsae" : "/home/sfrenk/Documents/Resources/Seq/briggsae/wormbase/WS263/genome.fa", "remanei" : "/home/sfrenk/Documents/Resources/Seq/remanei/genome.fa"}
 
 # CLUSTER
 #genome_fasta_files = {"elegans" : "/nas/longleaf/home/sfrenk/proj/seq/WS251/genome/genome.fa", "briggsae" : "/proj/ahmedlab/steve/seq/briggsae/WS263/caenorhabditis_briggsae.PRJNA10731.WBPS10.genomic.fa", "remani" : "/proj/ahmedlab/steve/seq/briggsae/WS263/caenorhabditis_remanei.PRJNA53967.WBPS10.genomic.fa.gz"}
 
 ###############################################################################
 def get_seq(chrom, start, end, name = None, zero = False, species = "elegans"):
+
+	""" Get genome sequence from coordinates
+
+		args:
+
+        chrom: Chromosome
+        start: start coordinate
+        end: end coordinate
+        name: name of sequence, which will be used in the seq record. By default, this is constructed automatically from the coordinates
+        zero: coordinates are zero-indexed. Default: False
+        species: elegans, briggsae or remanei. default: elegans 
+    """
 	
 	# Get coords
 	if zero:
